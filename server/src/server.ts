@@ -77,6 +77,9 @@ const server = http.createServer(async (req, res) => {
 
       res.end(JSON.stringify(result));
       break;
+      case "/": 
+      res.end(`Server is running on http://${host}:${port}`)
+      break;
 
     default:
       res.setHeader("Content-Type", "application/json");
