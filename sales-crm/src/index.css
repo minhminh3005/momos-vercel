@@ -5,6 +5,11 @@ html {
   font-size: 1.25em;
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 body{
   font-size: 16px;
   width:100%;

@@ -48,6 +48,7 @@
       background: linear-gradient(to right, #bfe9ff, rgba(255, 110, 127, 0.8)); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
       color: white;
       &--cell {
+        height: 40px;
         padding: 1rem;
         gap: 10px;
         position: relative;
