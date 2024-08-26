@@ -76,7 +76,7 @@ app.post('/database', async (req: Request, res: Response) => {
 });
 
 app.get('/', function(req, res, next) {
-  res.redirect('/database')
+  res.send(`Server is running on http://localhost:${port}`)
 });
 
 // Start the server
