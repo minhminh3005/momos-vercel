@@ -1,6 +1,14 @@
 import { ResizableProps } from "react-resizable";
 import { Column } from "react-table";
 
+export interface IMomomsTableCommmanbar {
+  filter? : any | undefined,
+  sort? : {
+    sortOrder: string,
+    sortBy: string
+  }
+}
+
 export interface IMomosTableProps<T extends object> {
     columns: Column<T>[];
     data: T[];

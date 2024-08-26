@@ -29,13 +29,13 @@ app.use((req, res, next) => {
 });
 // Endpoint to fetch data from the Notion database
 app.post('/database', async (req: Request, res: Response) => {
-  const { sortBy, sortOrder } = req.body;
+  const { command } = req.body;
   try {
-    const response = await notion.databases.query({
+       const response = await notion.databases.query({
       database_id: process.env.NOTION_DATABASE_ID as string,
-      sorts: sortBy && sortOrder ? [{
-        property: sortBy,
-        direction: sortOrder,
+      sorts: command?.sort?.sortBy &&command?.sort?.sortOrder ? [{
+        property: command.sort.sortBy,
+        direction: command.sort.sortOrder,
       }] : undefined,
     });
 
@@ -43,36 +43,40 @@ app.post('/database', async (req: Request, res: Response) => {
     const result = response.results.length ? response.results.map((result: any) => {
       const type = result.properties;
       let newValue: any = {};
-      Object.entries(type).forEach(([key , value]: any) => {
-          switch(value.type) {
-              case 'people':
-              newValue[key] = value?.people && value.people?.length ? value.people[0].name : '';
-              break; 
-              case 'title': 
-              newValue[key] = value?.title && value.title?.length ? value.title[0].plain_text : '';
-              break; 
-               case 'number': 
-              newValue[key] = value?.number ?? null;
-              break; 
-                case 'select': 
-              newValue[key] = value?.select ? value?.select?.name : '';
-              break; 
-                case 'rich_text': 
-              newValue[key] = value?.rich_text && value.rich_text?.length ? value.rich_text[0].plain_text : '';
-              break; 
-              default :
-              break;
-          }
-       
+      Object.entries(type).forEach(([key, value]: any) => {
+        switch (value.type) {
+          case 'people':
+            newValue[key] = value?.people && value.people?.length ? value.people[0].name : '';
+            break;
+          case 'title':
+            newValue[key] = value?.title && value.title?.length ? value.title[0].plain_text : '';
+            break;
+          case 'number':
+            newValue[key] = value?.number ?? null;
+            break;
+          case 'select':
+            newValue[key] = value?.select ? value?.select?.name : '';
+            break;
+          case 'rich_text':
+            newValue[key] = value?.rich_text && value.rich_text?.length ? value.rich_text[0].plain_text : '';
+            break;
+          default:
+            break;
+        }
+
       })
       return newValue
-}) : [];
+    }) : [];
 
     res.json(result);
   } catch (error) {
     console.error('Error fetching data from Notion:', error);
     res.status(500).json({ error: 'Failed to fetch data from Notion' });
   }
+});
+
+app.get('/', function(req, res, next) {
+  res.redirect('/database')
 });
 
 // Start the server

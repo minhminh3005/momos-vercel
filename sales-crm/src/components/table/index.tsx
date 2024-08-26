@@ -83,7 +83,10 @@ const Table = <T extends object>({ columns: initialColumns, data, fetchData }: I
   useEffect(() => {
     if (sortBy && sortOrder) {
       fetchData({
-        sortBy, sortOrder
+        sort: {
+          sortBy,
+           sortOrder
+        }
       });
     }
   }, [sortBy, sortOrder]);
