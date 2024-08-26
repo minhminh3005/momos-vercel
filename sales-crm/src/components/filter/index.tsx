@@ -1,98 +1,156 @@
 import React, { useState } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
+import { ConditionType, FilterBuilderProps, FilterCondition, FilterGroup } from './model';
 
-// Define the types of filters supported
-export type FilterType = 'checkbox' | 'date' | 'multi_select' | 'number' | 'rich_text' | 'select' | 'timestamp' | 'status';
+const FilterBuilder: React.FC<FilterBuilderProps> = ({ maxNestingLevel, onSave, onCancel }) => {
+  const [filters, setFilters] = useState<FilterGroup>({
+    operator: 'and',
+    filters: [],
+  });
 
-export interface Filter {
-  property: string;
-  type: FilterType;
-  condition?: string;
-  value: any;
-}
-
-export enum FilterConjunction  {
-  AND = 'and',
-  OR = 'or'
-}
-export interface FilterGroup {
-  conjunction: FilterConjunction;
-  filters: (Filter | FilterGroup)[];
-}
-
-export interface NotionFilterProps {
-  filterGroup: FilterGroup;
-  maxNestingLevel: number;
-}
-
-const MomosTableFilter: React.FC<NotionFilterProps> = ({ filterGroup, maxNestingLevel }) => {
-  const [filters, setFilters] = useState<FilterGroup>(filterGroup);
-
-  const addFilter = (level: number, groupIndex: number) => {
-    if (level >= maxNestingLevel) return;
-
-    const newFilter: Filter = {
-      property: '',
-      type: 'checkbox',
-      condition: 'is',
+  const addFilter = (groupIndex: number, filter?: FilterCondition) => {
+    const newFilter: FilterCondition = {
+      property: 'name',
+      type: 'rich_text',
+      condition: 'contains',
       value: '',
     };
-
-    const newFilters = [...filters.filters];
-    (newFilters[groupIndex] as FilterGroup).filters.push(newFilter);
-    setFilters({ ...filters, filters: newFilters });
+    updateFilterGroup(filters, groupIndex, [...filters.filters, newFilter]);
   };
 
-  const renderFilter = (filter: Filter, index: number) => (
-    <div key={index}>
-      <select value={filter.property} onChange={(e) => updateFilter(index, 'property', e.target.value)}>
-        <option value="done">Done</option>
-        <option value="tags">Tags</option>
-        {/* Add more property options here */}
-      </select>
+  const addFilterGroup = (groupIndex: number) => {
+    const newGroup: FilterGroup = {
+      operator: 'and',
+      filters: [],
+    };
+    updateFilterGroup(filters, groupIndex, [...filters.filters, newGroup]);
+  };
 
-      <select value={filter.condition} onChange={(e) => updateFilter(index, 'condition', e.target.value)}>
-        <option value="contains">Contains</option>
-        <option value="is">Is</option>
-        {/* Add more condition options here */}
-      </select>
+  const updateFilterGroup = (currentGroup: FilterGroup, groupIndex: number, newFilters: (FilterCondition | FilterGroup)[]) => {
+    if (groupIndex === 0) {
+      setFilters({ ...currentGroup, filters: newFilters });
+    } else {
+      const updateFilters = (group: FilterGroup, index: number): FilterGroup => {
+        if (index === groupIndex - 1) {
+          return { ...group, filters: newFilters };
+        } else {
+          return {
+            ...group,
+            filters: group.filters.map(filter => {
+              if ('filters' in filter) {
+                return updateFilters(filter as FilterGroup, index + 1);
+              }
+              return filter;
+            }),
+          };
+        }
+      };
+      setFilters(updateFilters(filters, 0));
+    }
+  };
 
-      <input type="text" value={filter.value} onChange={(e) => updateFilter(index, 'value', e.target.value)} />
+  const renderFilter = (filter: FilterCondition, index: number, groupIndex: number) => (
+    <div key={index} style={{ marginLeft: groupIndex * 20, marginBottom: 10, marginTop: 10 }}>
+      <FormControl variant="outlined" style={{ marginRight: 10 }}>
+        <InputLabel>Property</InputLabel>
+        <Select
+          value={filter.property}
+          onChange={(e) => {
+            filter.property = e.target.value as string;
+            setFilters({ ...filters });
+          }}
+          label="Property"
+        >
+          <MenuItem value="name">Name</MenuItem>
+          <MenuItem value="company">Company</MenuItem>
+        </Select>
+      </FormControl>
+
+      <FormControl variant="outlined" style={{ marginRight: 10 }}>
+        <InputLabel>Condition</InputLabel>
+        <Select
+          value={filter.condition}
+          onChange={(e) => {
+            filter.condition = e.target.value as ConditionType;
+            setFilters({ ...filters });
+          }}
+          label="Condition"
+        >
+          <MenuItem value="contains">Contains</MenuItem>
+        </Select>
+      </FormControl>
+
+      <TextField
+        label="Value"
+        variant="outlined"
+        value={filter.value}
+        onChange={(e) => {
+          filter.value = e.target.value;
+          setFilters({ ...filters });
+        }}
+      />
     </div>
   );
 
-  const updateFilter = (index: number, key: keyof Filter, value: any) => {
-    const newFilters = [...filters.filters];
-    (newFilters[index] as Filter)[key] = value;
-    setFilters({ ...filters, filters: newFilters });
-  };
-
-  const renderFilterGroup = (group: FilterGroup, level: number) => (
-    <div style={{ marginLeft: 20 * level }}>
-      <select
-        value={group.conjunction}
-        onChange={(e) => updateFilterGroup(level, 'conjunction', e.target.value)}
-      >
-        <option value="and">And</option>
-        <option value="or">Or</option>
-      </select>
+  const renderFilterGroup = (group: FilterGroup, groupIndex: number) => (
+    <div key={groupIndex} style={{ marginLeft: groupIndex * 20, marginBottom: 10 }}>
+      <FormControl variant="outlined" style={{ marginRight: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'cebter' }}>
+        <InputLabel>Operator</InputLabel>
+        <Select
+          value={group.operator}
+          onChange={(e) => {
+            group.operator = e.target.value as 'and' | 'or';
+            setFilters({ ...filters });
+          }}
+          label="Operator"
+        >
+          <MenuItem value="and">AND</MenuItem>
+          <MenuItem value="or">OR</MenuItem>
+        </Select>
+      </FormControl>
 
       {group.filters.map((filter, index) =>
-        'conjunction' in filter ? (
-          renderFilterGroup(filter as FilterGroup, level + 1)
-        ) : (
-          renderFilter(filter as Filter, index)
-        )
+        'filters' in filter
+          ? renderFilterGroup(filter as FilterGroup, groupIndex + 1)
+          : renderFilter(filter as FilterCondition, index, groupIndex)
       )}
 
-      <button onClick={() => addFilter(level, group.filters.length)}>+ Add Filter</button>
+      <Button variant="contained" color="primary" style={{ marginTop: 10 }} onClick={() => addFilter(groupIndex)}>
+        Add Filter
+      </Button>
+      {/* Add filter group not behave as expected */}
+      {/* {groupIndex < maxNestingLevel && (
+        <Button variant="outlined" color="secondary" onClick={() => addFilterGroup(groupIndex)}>
+          Add Filter Group
+        </Button>
+      )} */}
+
+
     </div>
   );
 
-  const updateFilterGroup = (level: number, key: keyof FilterGroup, value: any) => {
-    // Update filter group logic here
+  const handleSave = () => {
+    onSave(filters);
   };
 
-  return <div>{renderFilterGroup(filters, 0)}</div>;
+  return (
+    <Dialog open onClose={onCancel} maxWidth="md" fullWidth>
+      <DialogTitle>Build Filters</DialogTitle>
+      <DialogContent style={{
+        paddingTop: 10
+      }}>
+        {renderFilterGroup(filters, 0)}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel} color="secondary"  variant="contained">
+          Cancel
+        </Button>
+        <Button onClick={handleSave} color="primary" variant="contained">
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 };
 
-export default MomosTableFilter;
+export default FilterBuilder;

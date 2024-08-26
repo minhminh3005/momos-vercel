@@ -37,6 +37,7 @@ app.post('/database', async (req: Request, res: Response) => {
         property: command.sort.sortBy,
         direction: command.sort.sortOrder,
       }] : undefined,
+      filter: command?.filter ?? undefined
     });
 
     // Extract and structure the data as needed

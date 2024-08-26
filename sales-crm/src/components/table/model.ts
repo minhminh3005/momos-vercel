@@ -1,4 +1,3 @@
-import { ResizableProps } from "react-resizable";
 import { Column } from "react-table";
 
 export interface IMomomsTableCommmanbar {
